@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle RMA e Logística Reversa</title>
+    <style>
+        :root {
+            --bg-primary: #f4f6f9;
+            --panel-bg: #ffffff;
+            --text-main: #2c3e50;
+            --border-color: #dcdde1;
+            
+            /* Ciclos e Alertas */
+            --ciclo-1: #2ecc71;
+            --ciclo-2: #f1c40f;
+            --ciclo-3: #e67e22;
+            --ciclo-4: #e74c3c;
+            --color-blue: #3498db;
+            --color-dark: #130f40;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-primary); color: var(--text-main); padding: 20px; }
+        .container { max-width: 1450px; margin: 0 auto; }
+        
+        /* Cabeçalho */
+        header { 
+            background: var(--panel-bg); 
+            padding: 20px 25px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title h1 { font-size: 22px; color: #2c3e50; }
+        .header-title p { color: #7f8c8d; font-size: 13px; margin-top: 3px; }
+
+        /* Grid Topo */
+        .top-boxes-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Equipamentos de Alerta */
+        .box-alerta-vermelha {
+            background: #e74c3c;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
+        }
+        .box-alerta-vermelha h2 { font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .lista-alerta { max-height: 180px; overflow-y: auto; background: rgba(0, 0, 0, 0.15); border-radius: 6px; padding: 10px; font-size: 12px; }
+
+        /* Dashboard */
+        .box-dashboard {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+        .box-dashboard h2 { font-size: 16px; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid var(--bg-primary); padding-bottom: 5px; }
+        
+        .dash-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+        .metric-card {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+        .metric-card .title { font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; }
+        .metric-card .value { font-size: 20px; font-weight: bold; color: #2c3e50; }
+        .metric-card .value-meta { font-size: 24px; }
+        .metric-card .subtitle { font-size: 10px; color: #95a5a6; margin-top: 3px; }
+
+        /* Abas de Navegação */
+        .nav-tabs { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-btn { 
+            padding: 12px 20px; 
+            border: none; 
+            background: #e0e6ed; 
+            color: #555; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 14px;
+            transition: 0.2s;
+            touch-action: manipulation;
+        }
+        .tab-btn.active { background: var(--color-blue); color: white; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Cards & Formulários */
+        .card { background: var(--panel-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid var(--bg-primary); padding-bottom: 8px; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 12px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
+        .form-control { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; }
+        .form-control:focus { outline: none; border-color: var(--color-blue); }
+
+        .input-hybrid-group { display: flex; gap: 8px; align-items: center; }
+        .input-zebra { background: #eaf2f8; border: 2px solid var(--color-blue); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; flex: 1; }
+
+        /* Botões */
+        .btn { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; justify-content: center; }
+        .btn-success { background: var(--ciclo-1); color: white; }
+        .btn-primary { background: var(--color-blue); color: white; }
+        .btn-danger { background: var(--ciclo-4); color: white; }
+        .btn-sm { padding: 5px 8px; font-size: 11px; }
+
+        /* Tabelas */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 13px; }
+        th { background: #f8f9fa; color: #7f8c8d; font-weight: bold; }
+
+        /* Bolinhas de Ciclos */
+        .ciclo-dot {
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+        .dot-ciclo-1 { background-color: var(--ciclo-1); }
+        .dot-ciclo-2 { background-color: var(--ciclo-2); }
+        .dot-ciclo-3 { background-color: var(--ciclo-3); }
+        .dot-ciclo-4 { background-color: var(--ciclo-4); }
+
+        .status-hint { font-size: 11px; color: #7f8c8d; margin-top: 4px; }
+        .flex-actions { display: flex; gap: 6px; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Cabeçalho -->
+        <header>
+            <div class="header-title">
+                <h1>Seja bem-vinda, Aline! 👋</h1>
+                <p>⚡ <em>"A precisão na triagem e no teste de bancada é a chave para o alto desempenho operacional e excelência em nossa logística."</em></p>
+            </div>
+            <button class="btn btn-danger" onclick="limparBancoDados()">🗑 Zerar Sistema</button>
+        </header>
+
+        <!-- CAIXAS SUPERIORES -->
+        <div class="top-boxes-grid">
+            
+            <!-- CAIXINHA: EQUIPAMENTOS DE ALERTA -->
+            <div class="box-alerta-vermelha">
+                <h2>⚠️ EQUIPAMENTOS DE ALERTA</h2>
+                <p style="font-size: 11px; margin-bottom: 10px; opacity: 0.9;">Aparelhos que deram entrada pela 3ª vez (Atenção Máxima na Bancada):</p>
+                <div class="lista-alerta" id="containerAlertas3Ciclo">
+                    <div style="text-align:center; padding:15px; opacity:0.8;">Nenhum equipamento no 3º ciclo no momento.</div>
+                </div>
+            </div>
+
+            <!-- CAIXINHA: DASHBOARD DE DESEMPENHO -->
+            <div class="box-dashboard">
+                <h2>📊 DASHBOARD DE DESEMPENHO</h2>
+                <div class="dash-metrics-grid">
+                    
+                    <div class="metric-card">
+                        <div class="title">Recuperados Hoje</div>
+                        <div class="value" id="dashRecuperadosDia">0</div>
+                        <div class="subtitle">Meta do dia: 12</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="title">Indicador Meta</div>
+                        <div class="value-meta">😳</div>
+                        <div class="subtitle">Abaixo da Média (&lt; 8)</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="title">Recuperados na Semana</div>
+                        <div class="value" id="dashRecuperadosSemana">0</div>
+                        <div class="subtitle">Desempenho Semanal</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="title">Recuperados no Mês</div>
+                        <div class="value" style="color: var(--color-blue);" id="dashRecuperadosMes">0</div>
+                        <div class="subtitle">Total Processado</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="title">Comissão do Mês</div>
+                        <div class="value" style="color: var(--ciclo-1);" id="dashComissaoMes">R$ 0,00</div>
+                        <div class="subtitle">R$ 2,00 por Aparelho</div>
+                    </div>
+
+                    <div class="metric-card" style="border-color: var(--ciclo-3);">
+                        <div class="title" style="color: var(--ciclo-3);">Reincidência &lt; 30 dias</div>
+                        <div class="value" style="color: var(--ciclo-3);" id="dashReincidenciaCount">0</div>
+                        <div class="subtitle">Alertas de Retorno Rápido</div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Menu de Navegação entre Abas -->
+        <nav class="nav-tabs">
+            <button type="button" class="tab-btn active" id="btn-tab-1" onclick="mudarAba('abaTriagem', this)">🧰 1. Triagem (Recepção)</button>
+            <button type="button" class="tab-btn" id="btn-tab-2" onclick="mudarAba('abaRma', this)">🔬 2. Bancada RMA (Recuperação)</button>
+            <button type="button" class="tab-btn" id="btn-tab-3" onclick="mudarAba('abaEstante', this)">🏬 3. Base Jardim (Estante a Campo)</button>
+            <button type="button" class="tab-btn" id="btn-tab-4" onclick="mudarAba('abaCampo', this)">👥 4. Equipamentos em Campo</button>
+        </nav>
+
+        <!-- ================= ABA 1: TRIAGEM DE ENTRADA ================= -->
+        <section id="abaTriagem" class="tab-content active">
+            <div class="card">
+                <div class="card-title">Devolução de Técnico (Bipar ou Digitar)</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Técnico que Devolveu</label>
+                        <select id="triagemTecnicoDevolucao" class="form-control" onchange="sincronizarTecnicoTriagem()">
+                            <option value="RENATO">RENATO</option><option value="RICARDO">RICARDO</option>
+                            <option value="ROGERIO">ROGERIO</option><option value="HENRIQUE">HENRIQUE</option>
+                            <option value="SEBASTIAO">SEBASTIAO</option><option value="TULIO">TULIO</option>
+                            <option value="IGOR">IGOR</option><option value="MATEUS">MATEUS</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Endereço MAC (Automático via Bip ou Digite 12 caracteres)</label>
+                        <div class="input-hybrid-group">
+                            <input type="text" id="triagemMacInput" class="form-control input-zebra" placeholder="Ex: AA:BB:CC:11:22:33 ou AABBCC112233" 
+                                   onkeydown="tratarTeclaMacTriagem(event)" 
+                                   oninput="tratarDigitacaoManualTriagem(this)">
+                            <button type="button" class="btn btn-primary" onclick="confirmarProcessamentoMacTriagem()">🔍 Buscar / Validar MAC</button>
+                        </div>
+                        <span class="status-hint">O leitor Zebra processa automaticamente. Se digitar manualmente, selecione o técnico e preencha abaixo.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="cardDetalhesTriagem">
+                <div class="card-title">Dados para Registro e Envio ao RMA</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Data Entrada</label>
+                        <input type="text" id="triagemData" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Técnico Devolução</label>
+                        <input type="text" id="triagemTecnicoConfirmado" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Marca</label>
+                        <input type="text" id="triagemMarca" class="form-control" placeholder="Ex: Huawei, Tenda, TP-Link">
+                    </div>
+                    <div class="form-group">
+                        <label>Modelo</label>
+                        <input type="text" id="triagemModelo" class="form-control" placeholder="Ex: HG9, WS5200">
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Defeito Relatado pelo Técnico</label>
+                        <input type="text" id="triagemDefeito" class="form-control" placeholder="Ex: Não liga, PON piscando, sem Wi-Fi">
+                    </div>
+                </div>
+                <div style="margin-top: 15px; text-align: right;">
+                    <button class="btn btn-success" onclick="confirmarEntradaRMA()">📥 Registrar e Enviar para Bancada RMA</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ABA 2: BANCADA RMA ================= -->
+        <section id="abaRma" class="tab-content">
+            <div class="card">
+                <div class="card-title">Estoque RMA - Modens a Recuperar</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status Ciclo</th>
+                            <th>MAC</th>
+                            <th>Data Triagem</th>
+                            <th>Técnico Devolução</th>
+                            <th>Marca / Modelo</th>
+                            <th>Defeito Relatado</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaRmaCorpo">
+                        <tr><td colspan="7" style="text-align:center; color:#888;">Nenhum modem aguardando reparo na bancada.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================= ABA 3: BASE JARDIM ================= -->
+        <section id="abaEstante" class="tab-content">
+            <div class="card">
+                <div class="card-title">Estoque Base Jardim (Prontos para Campo)</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ciclo</th>
+                            <th>Endereço MAC</th>
+                            <th>Marca / Modelo</th>
+                            <th>Histórico Completo</th>
+                            <th>Data Entrada</th>
+                            <th>Ações (Transferir para Técnico)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaEstanteCorpo">
+                        <tr><td colspan="6" style="text-align:center; color:#888;">Nenhum equipamento pronto na estante.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================= ABA 4: EQUIPAMENTOS EM CAMPO ================= -->
+        <section id="abaCampo" class="tab-content">
+            <div class="card">
+                <div class="card-title">Modens em Posse dos Técnicos</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Técnico em Posse</th>
+                            <th>Data Saída</th>
+                            <th>MAC</th>
+                            <th>Marca / Modelo</th>
+                            <th>Ciclo do Aparelho</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCampoCorpo">
+                        <tr><td colspan="6" style="text-align:center; color:#888;">Nenhum equipamento em campo.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        let listaTecnicos = ["RENATO", "RICARDO", "ROGERIO", "HENRIQUE", "SEBASTIAO", "TULIO", "IGOR", "MATEUS"];
+
+        let estoqueRMA = JSON.parse(localStorage.getItem('rma_estoqueRMA')) || [];
+        let estoqueEstante = JSON.parse(localStorage.getItem('rma_estoqueEstante')) || [];
+        let estoqueCampo = JSON.parse(localStorage.getItem('rma_estoqueCampo')) || [];
+        let historicoGeralMacs = JSON.parse(localStorage.getItem('rma_historicoGeralMacs')) || {};
+
+        let timerDigitacaoTriagem = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderizarTodasTabelas();
+            sincronizarTecnicoTriagem();
+            document.getElementById('triagemData').value = new Date().toLocaleDateString('pt-BR');
+        });
+
+        function salvarLocalStorage() {
+            localStorage.setItem('rma_estoqueRMA', JSON.stringify(estoqueRMA));
+            localStorage.setItem('rma_estoqueEstante', JSON.stringify(estoqueEstante));
+            localStorage.setItem('rma_estoqueCampo', JSON.stringify(estoqueCampo));
+            localStorage.setItem('rma_historicoGeralMacs', JSON.stringify(historicoGeralMacs));
+        }
+
+        // --- TROCA DE ABAS ---
+        function mudarAba(idAba, elBtn) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+
+            document.getElementById(idAba).classList.add('active');
+            if(elBtn) {
+                elBtn.classList.add('active');
+            }
+        }
+
+        function sincronizarTecnicoTriagem() {
+            let tec = document.getElementById('triagemTecnicoDevolucao').value;
+            document.getElementById('triagemTecnicoConfirmado').value = tec;
+        }
+
+        // --- PROCESSAMENTO DE MAC ---
+        function tratarTeclaMacTriagem(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmarProcessamentoMacTriagem();
+            }
+        }
+
+        function tratarDigitacaoManualTriagem(input) {
+            clearTimeout(timerDigitacaoTriagem);
+            let limpo = input.value.toUpperCase().replace(/[^A-F0-9]/g, "");
+            
+            if (limpo.length > 0) {
+                let formatado = limpo.match(/.{1,2}/g).join(":");
+                if (formatado.length <= 17) {
+                    input.value = formatado;
+                }
+            }
+
+            if (limpo.length === 12) {
+                timerDigitacaoTriagem = setTimeout(() => {
+                    confirmarProcessamentoMacTriagem();
+                }, 300);
+            }
+        }
+
+        function confirmarProcessamentoMacTriagem() {
+            let input = document.getElementById('triagemMacInput');
+            let macRaw = input.value.trim().toUpperCase();
+            let macLimpo = macRaw.replace(/[:\-\s]/g, "");
+
+            if (!macLimpo) {
+                alert("Por favor, informe ou bipe o MAC.");
+                return;
+            }
+
+            sincronizarTecnicoTriagem();
+            document.getElementById('triagemData').value = new Date().toLocaleDateString('pt-BR');
+
+            let hist = historicoGeralMacs[macLimpo];
+            if (hist && hist.length > 0) {
+                document.getElementById('triagemMarca').value = hist[hist.length - 1].marca || "";
+                document.getElementById('triagemModelo').value = hist[hist.length - 1].modelo || "";
+            }
+
+            document.getElementById('triagemDefeito').focus();
+        }
+
+        function confirmarEntradaRMA() {
+            let macInput = document.getElementById('triagemMacInput').value.trim().toUpperCase();
+            let macLimpo = macInput.replace(/[:\-\s]/g, "");
+
+            if (!macLimpo) {
+                alert("Informe ou bipe o MAC antes de salvar.");
+                document.getElementById('triagemMacInput').focus();
+                return;
+            }
+
+            let marca = document.getElementById('triagemMarca').value.trim();
+            let modelo = document.getElementById('triagemModelo').value.trim();
+            let defeito = document.getElementById('triagemDefeito').value.trim();
+            let tec = document.getElementById('triagemTecnicoConfirmado').value;
+            let hoje = document.getElementById('triagemData').value;
+
+            if (!defeito) {
+                alert("Informe o defeito relatado pelo técnico.");
+                return;
+            }
+
+            if (!historicoGeralMacs[macLimpo]) {
+                historicoGeralMacs[macLimpo] = [];
+            }
+
+            let numCiclo = historicoGeralMacs[macLimpo].length + 1;
+
+            historicoGeralMacs[macLimpo].push({
+                ciclo: numCiclo,
+                dataEntrada: hoje,
+                tecnicoDevolucao: tec,
+                marca: marca,
+                modelo: modelo,
+                defeito: defeito
+            });
+
+            estoqueRMA.push({
+                mac: macLimpo,
+                ciclo: numCiclo,
+                dataEntrada: hoje,
+                tecnicoDevolucao: tec,
+                marca: marca,
+                modelo: modelo,
+                defeito: defeito
+            });
+
+            salvarLocalStorage();
+            renderizarTodasTabelas();
+
+            document.getElementById('triagemMacInput').value = "";
+            document.getElementById('triagemMarca').value = "";
+            document.getElementById('triagemModelo').value = "";
+            document.getElementById('triagemDefeito').value = "";
+            document.getElementById('triagemMacInput').focus();
+
+            alert(`✅ Equipamento MAC (${macLimpo}) enviado para a Bancada RMA!`);
+        }
+
+        // --- RENDERIZAÇÃO DAS TABELAS E AÇÕES ---
+        function renderizarTodasTabelas() {
+            renderizarTabelaRMA();
+            renderizarTabelaEstante();
+            renderizarTabelaCampo();
+        }
+
+        function renderizarTabelaRMA() {
+            let tbody = document.getElementById('tabelaRmaCorpo');
+            tbody.innerHTML = "";
+
+            if (estoqueRMA.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888;">Nenhum modem aguardando reparo na bancada.</td></tr>`;
+                return;
+            }
+
+            estoqueRMA.forEach((item, index) => {
+                let dotClass = `dot-ciclo-${Math.min(item.ciclo, 4)}`;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="ciclo-dot ${dotClass}"></span> ${item.ciclo}º Ciclo</td>
+                        <td><strong>${item.mac}</strong></td>
+                        <td>${item.dataEntrada}</td>
+                        <td>${item.tecnicoDevolucao}</td>
+                        <td>${item.marca} ${item.modelo}</td>
+                        <td>${item.defeito}</td>
+                        <td>
+                            <div class="flex-actions">
+                                <button class="btn btn-success btn-sm" onclick="moverParaEstante(${index})">✅ Recuperado</button>
+                                <button class="btn btn-danger btn-sm" onclick="excluirRMA(${index})">🗑️ Excluir</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderizarTabelaEstante() {
+            let tbody = document.getElementById('tabelaEstanteCorpo');
+            tbody.innerHTML = "";
+
+            if (estoqueEstante.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">Nenhum equipamento pronto na estante.</td></tr>`;
+                return;
+            }
+
+            estoqueEstante.forEach((item, index) => {
+                let optionsTecnicos = listaTecnicos.map(t => `<option value="${t}">${t}</option>`).join("");
+                let dotClass = `dot-ciclo-${Math.min(item.ciclo || 1, 4)}`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="ciclo-dot ${dotClass}"></span> ${item.ciclo || 1}º Ciclo</td>
+                        <td><strong>${item.mac}</strong></td>
+                        <td>${item.marca || ''} ${item.modelo || ''}</td>
+                        <td>Aparelho testado e pronto</td>
+                        <td>${item.dataEntrada || '-'}</td>
+                        <td>
+                            <div class="flex-actions">
+                                <select id="selTecnicoEstante_${index}" class="form-control" style="width: 130px; font-size: 11px; padding: 4px;">
+                                    ${optionsTecnicos}
+                                </select>
+                                <button class="btn btn-primary btn-sm" onclick="transferirEstanteParaCampo(${index})">🚚 Transferir</button>
+                                <button class="btn btn-danger btn-sm" onclick="excluirEstante(${index})">🗑️ Excluir</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderizarTabelaCampo() {
+            let tbody = document.getElementById('tabelaCampoCorpo');
+            tbody.innerHTML = "";
+
+            if (estoqueCampo.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">Nenhum equipamento em campo.</td></tr>`;
+                return;
+            }
+
+            estoqueCampo.forEach((item, index) => {
+                let dotClass = `dot-ciclo-${Math.min(item.ciclo || 1, 4)}`;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${item.tecnico || 'N/A'}</strong></td>
+                        <td>${item.dataSaida || '-'}</td>
+                        <td><strong>${item.mac}</strong></td>
+                        <td>${item.marca || ''} ${item.modelo || ''}</td>
+                        <td><span class="ciclo-dot ${dotClass}"></span> ${item.ciclo || 1}º Ciclo</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="excluirCampo(${index})">🗑️ Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // MOVER DE BANCADA PARA ESTANTE
+        function moverParaEstante(index) {
+            let item = estoqueRMA.splice(index, 1)[0];
+            estoqueEstante.push(item);
+            salvarLocalStorage();
+            renderizarTodasTabelas();
+        }
+
+        // TRANSFERIR DA ESTANTE (ABA 3) PARA CAMPO (ABA 4)
+        function transferirEstanteParaCampo(index) {
+            let selectTecnico = document.getElementById(`selTecnicoEstante_${index}`);
+            let tecSelecionado = selectTecnico.value;
+
+            if (!tecSelecionado) {
+                alert("Selecione um técnico para transferir o equipamento.");
+                return;
+            }
+
+            let item = estoqueEstante.splice(index, 1)[0];
+            item.tecnico = tecSelecionado;
+            item.dataSaida = new Date().toLocaleDateString('pt-BR');
+
+            estoqueCampo.push(item);
+            salvarLocalStorage();
+            renderizarTodasTabelas();
+
+            alert(`🚚 Equipamento MAC (${item.mac}) transferido com sucesso para a posse do técnico ${tecSelecionado}!`);
+        }
+
+        // FUNÇÕES DE EXCLUSÃO (LIXEIRA)
+        function excluirRMA(index) {
+            if (confirm("Deseja realmente excluir este equipamento da Bancada RMA?")) {
+                estoqueRMA.splice(index, 1);
+                salvarLocalStorage();
+                renderizarTodasTabelas();
+            }
+        }
+
+        function excluirEstante(index) {
+            if (confirm("Deseja realmente excluir este equipamento do Estoque Base Jardim?")) {
+                estoqueEstante.splice(index, 1);
+                salvarLocalStorage();
+                renderizarTodasTabelas();
+            }
+        }
+
+        function excluirCampo(index) {
+            if (confirm("Deseja realmente excluir este equipamento da lista de Equipamentos em Campo?")) {
+                estoqueCampo.splice(index, 1);
+                salvarLocalStorage();
+                renderizarTodasTabelas();
+            }
+        }
+
+        function limparBancoDados() {
+            if (confirm("⚠️ Tem certeza que deseja APAGAR TODOS OS DADOS do sistema?")) {
+                localStorage.clear();
+                estoqueRMA = [];
+                estoqueEstante = [];
+                estoqueCampo = [];
+                historicoGeralMacs = {};
+                renderizarTodasTabelas();
+                alert("🧹 Banco de dados zerado com sucesso!");
+            }
+        }
+    </script>
+</body>
+</html>
